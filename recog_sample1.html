@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<script type="text/javascript" src="assets/jquery-2.1.1.min.js"></script>
+		
+		<script src="assets/face-api.js"></script>
+		<script src="assets/commons.js"></script>
+		<script src="assets/faceDetectionControls.js"></script>
+		<script src="assets/imageSelectionControls.js"></script>
+		<style>
+		body{
+			margin:0;
+			padding:0;
+			width:100vw;
+			height:100vh;
+			display: flex;
+			justify-content: center;
+			align-items: center;
+		
+			}
+		</style>
+	</head>
+	
+	<body>
+		
+		<div style="position: relative;" class="margin">
+		  <video  id="inputVideo" width="720" height="560" autoplay muted></video>
+		  
+		</div>
+		<p id="msg" style="color:red;display:none;font-size:30px;z-index:111;position:absolute;font-weight:bold;margin-top:300px;background-color:white;">Process Running...</p>
+		<img id="ref_img1" src="" style="height:250px;width:300px;position:absolute;z-index:112;margin-left:600px;">
+		<img id="ref_img2" src="" style="height:250px;width:300px;position:absolute;z-index:112;margin-left:600px;margin-top:300px;">
+		
+	</body>
+	<script>
+		
+		
+		const videoEl = document.getElementById('inputVideo');
+		var ref_image1,ref_image2,ref_results1,ref_results2; 
+
+		//All global neural network instances are exported via faceapi.nets:
+		// ageGenderNet
+		// faceExpressionNet
+		// faceLandmark68Net
+		// faceLandmark68TinyNet
+		// faceRecognitionNet
+		// ssdMobilenetv1
+		// tinyFaceDetector
+		// mtcnn
+		// tinyYolov2
+		 
+		Promise.all([
+		faceapi.nets.ssdMobilenetv1.loadFromUri('assets/'),
+		faceapi.nets.tinyFaceDetector.loadFromUri('assets/'),
+		faceapi.nets.mtcnn.loadFromUri('assets/'),
+		faceapi.nets.faceLandmark68Net.loadFromUri('assets/'),
+		faceapi.nets.faceRecognitionNet.loadFromUri('assets/'),
+		faceapi.nets.faceExpressionNet.loadFromUri('assets/')
+		
+		// accordingly for the other models:
+		// await faceapi.nets.faceLandmark68Net.loadFromUri('/models')
+		// await faceapi.nets.faceRecognitionNet.loadFromUri('/models')
+		// ...
+		]).then(st_vid);
+			
+		async function st_vid() {
+		 
+		 
+		//Fetching reference image
+		ref_image1 = await faceapi.fetchImage('images/mlr1.jpg');
+		ref_image2 = await faceapi.fetchImage('images/mlr2.jpg');
+		
+		document.getElementById('ref_img1').src=ref_image1.src;
+		document.getElementById('ref_img2').src=ref_image2.src;
+		
+		//recognition
+		ref_results1 = await faceapi.detectAllFaces(ref_image1).withFaceLandmarks().withFaceDescriptors();
+		ref_results2 = await faceapi.detectAllFaces(ref_image2).withFaceLandmarks().withFaceDescriptors();
+				
+		 
+		  // try to access users webcam and stream the images
+		  // to the video element
+		  navigator.getUserMedia(
+			{ video: {} },
+			stream => videoEl.srcObject = stream,
+			err => console.error(err)
+		  )
+		}
+		console.log('Camera started');
+		
+		videoEl.addEventListener('play', ()=> {
+			const canvas=faceapi.createCanvasFromMedia(videoEl);
+			document.body.append(canvas);
+			canvas.style.position='absolute';
+			
+			const displaySize= {width: videoEl.width, height: videoEl.height };
+			faceapi.matchDimensions(canvas,displaySize);
+			console.log('Process start....');
+			setInterval(async () => {
+			
+			
+				//Detect all faces in an image. Returns Array<FaceDetection>:
+
+					//const detections = await faceapi.detectAllFaces(input);
+				
+				//Detect the face with the highest confidence score in an image. Returns FaceDetection | undefined:
+
+					//const detection = await faceapi.detectSingleFace(input)
+					
+				//By default detectAllFaces and detectSingleFace utilize the SSD Mobilenet V1 Face Detector. You can specify the face detector by passing the corresponding options object:
+
+					//const detections1 = await faceapi.detectAllFaces(input, new faceapi.SsdMobilenetv1Options())
+					//const detections2 = await faceapi.detectAllFaces(input, new faceapi.TinyFaceDetectorOptions())
+					//const detections3 = await faceapi.detectAllFaces(input, new faceapi.MtcnnOptions())
+				
+				const detections=await faceapi.detectAllFaces(videoEl).withFaceLandmarks().withFaceDescriptors();
+				
+				
+				//Detect all faces in an image + computes 68 Point Face Landmarks for each detected face. Returns Array<WithFaceLandmarks<WithFaceDetection<{}>>>:
+
+					//const detectionsWithLandmarks = await faceapi.detectAllFaces(input).withFaceLandmarks()
+
+
+				//Detect the face with the highest confidence score in an image + computes 68 Point Face Landmarks for that face. Returns WithFaceLandmarks<WithFaceDetection<{}>> | undefined:
+
+					//const detectionWithLandmarks = await faceapi.detectSingleFace(input).withFaceLandmarks()
+				
+				
+				//Detect all faces in an image + compute 68 Point Face Landmarks for each detected face. Returns Array<WithFaceDescriptor<WithFaceLandmarks<WithFaceDetection<{}>>>>:
+
+					//const results = await faceapi.detectAllFaces(input).withFaceLandmarks().withFaceDescriptors()
+				
+				
+				
+				//Detect the face with the highest confidence score in an image + compute 68 Point Face Landmarks and face descriptor for that face. Returns WithFaceDescriptor<WithFaceLandmarks<WithFaceDetection<{}>>> | undefined:
+
+					//const result = await faceapi.detectSingleFace(input).withFaceLandmarks().withFaceDescriptor()
+					
+					
+				//Detect all faces in an image + estimate age and recognize gender of each face. Returns Array<WithAge<WithGender<WithFaceLandmarks<WithFaceDetection<{}>>>>>:
+
+					//const detectionsWithAgeAndGender = await faceapi.detectAllFaces(input).withFaceLandmarks().withAgeAndGender()
+
+
+
+				//Detect the face with the highest confidence score in an image + estimate age and recognize gender for that face. Returns WithAge<WithGender<WithFaceLandmarks<WithFaceDetection<{}>>>> | undefined:
+
+					//const detectionWithAgeAndGender = await faceapi.detectSingleFace(input).withFaceLandmarks().withAgeAndGender()
+				
+				/*
+				// all faces
+				await faceapi.detectAllFaces(input)
+				await faceapi.detectAllFaces(input).withFaceExpressions()
+				await faceapi.detectAllFaces(input).withFaceLandmarks()
+				await faceapi.detectAllFaces(input).withFaceLandmarks().withFaceExpressions()
+				await faceapi.detectAllFaces(input).withFaceLandmarks().withFaceExpressions().withFaceDescriptors()
+				await faceapi.detectAllFaces(input).withFaceLandmarks().withAgeAndGender().withFaceDescriptors()
+				await faceapi.detectAllFaces(input).withFaceLandmarks().withFaceExpressions().withAgeAndGender().withFaceDescriptors()
+
+				// single face
+				await faceapi.detectSingleFace(input)
+				await faceapi.detectSingleFace(input).withFaceExpressions()
+				await faceapi.detectSingleFace(input).withFaceLandmarks()
+				await faceapi.detectSingleFace(input).withFaceLandmarks().withFaceExpressions()
+				await faceapi.detectSingleFace(input).withFaceLandmarks().withFaceExpressions().withFaceDescriptor()
+				await faceapi.detectSingleFace(input).withFaceLandmarks().withAgeAndGender().withFaceDescriptor()
+				await faceapi.detectSingleFace(input).withFaceLandmarks().withFaceExpressions().withAgeAndGender().withFaceDescriptor()
+				*/
+				
+				
+				
+				const rsz_detect=faceapi.resizeResults(detections,displaySize);
+				canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height);
+				faceapi.draw.drawDetections(canvas,rsz_detect);				
+				//faceapi.draw.drawFaceLandmarks(canvas,rsz_detect);				
+				//faceapi.draw.drawFaceExpressions(canvas,rsz_detect);
+				
+				
+				
+				
+				
+				
+				console.log('Process Running...');
+				document.getElementById('msg').style.display='block';
+				
+				
+				
+				
+				
+				
+				/*
+				//labeling
+				const labeledDescriptors = [
+				  new faceapi.LabeledFaceDescriptors(
+					'Mir Lutfur Rahman',
+					[ref_results /*, ...*/ /* ]
+				  )
+				]
+				*/
+				
+				// create FaceMatcher with automatically assigned labels
+				// from the detection results for the reference image
+				
+				const faceMatcher = new faceapi.FaceMatcher(ref_results1); 
+				
+				//checking query image with reference image
+				if (detections) {
+					detections.forEach(fd => {
+					  const bestMatch = faceMatcher.findBestMatch(fd.descriptor);
+					  console.log('Check Result: '+bestMatch.toString());
+					})
+				}
+								
+				
+				
+			}, 100)
+		})
+		
+		
+		
+		
+	</script>
+</html> 
