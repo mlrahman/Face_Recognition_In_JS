@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<script type="text/javascript" src="assets/jquery-2.1.1.min.js"></script>
+		
+		<script src="assets/face-api.js"></script>
+		<script src="assets/commons.js"></script>
+		<script src="assets/faceDetectionControls.js"></script>
+		<script src="assets/imageSelectionControls.js"></script>
+		<style>
+		body{
+			margin:0;
+			padding:0;
+			width:100vw;
+			height:100vh;
+			display: flex;
+			justify-content: center;
+			align-items: center;
+		
+			}
+		</style>
+	</head>
+	
+	<body>
+		
+		<div style="position: relative;" class="margin">
+		  <video  id="inputVideo" width="720" height="560" autoplay muted></video>
+		  
+		</div>
+		<p id="msg" style="color:red;display:none;font-size:30px;z-index:111;position:absolute;font-weight:bold;margin-top:300px;background-color:white;">Process Running...</p>
+		<p id="msg2" style="color:blue;display:none;font-size:30px;z-index:111;position:absolute;font-weight:bold;margin-top:370px;background-color:white;"></p>
+		
+	</body>
+	<script>
+		
+		
+		var videoEl = document.getElementById('inputVideo');
+		var labeledFaceDescriptors,faceMatcher;
+		
+		//All global neural network instances are exported via faceapi.nets:
+		// ageGenderNet
+		// faceExpressionNet
+		// faceLandmark68Net
+		// faceLandmark68TinyNet
+		// faceRecognitionNet
+		// ssdMobilenetv1
+		// tinyFaceDetector
+		// mtcnn
+		// tinyYolov2
+		 
+		Promise.all([
+		faceapi.nets.ssdMobilenetv1.loadFromUri('assets/'),
+		faceapi.nets.tinyFaceDetector.loadFromUri('assets/'),
+		faceapi.nets.mtcnn.loadFromUri('assets/'),
+		faceapi.nets.faceLandmark68Net.loadFromUri('assets/'),
+		faceapi.nets.faceRecognitionNet.loadFromUri('assets/'),
+		faceapi.nets.faceExpressionNet.loadFromUri('assets/')
+		
+		// accordingly for the other models:
+		// await faceapi.nets.faceLandmark68Net.loadFromUri('/models')
+		// await faceapi.nets.faceRecognitionNet.loadFromUri('/models')
+		// ...
+		]).then(st_vid);
+			
+		async function st_vid() {
+		 
+		 
+		
+		document.getElementById('msg2').style.display='block';
+		//load reference images
+		labeledFaceDescriptors = await loadLabeledImages();
+		faceMatcher = new faceapi.FaceMatcher(labeledFaceDescriptors, 0.5);
+		
+		
+		
+				
+		 
+		  // try to access users webcam and stream the images
+		  // to the video element
+		  navigator.getUserMedia(
+			{ video: {} },
+			stream => videoEl.srcObject = stream,
+			err => console.error(err)
+		  )
+		}
+		console.log('Camera started');
+		
+		videoEl.addEventListener('play', ()=> {
+			var canvas=faceapi.createCanvasFromMedia(videoEl);
+			document.body.append(canvas);
+			canvas.style.position='absolute';
+			
+			var displaySize= {width: videoEl.width, height: videoEl.height };
+			faceapi.matchDimensions(canvas,displaySize);
+			console.log('Process start....');
+			setInterval(async () => {
+			
+			
+				//Detect all faces in an image. Returns Array<FaceDetection>:
+
+					//var detections = await faceapi.detectAllFaces(input);
+				
+				//Detect the face with the highest confidence score in an image. Returns FaceDetection | undefined:
+
+					//var detection = await faceapi.detectSingleFace(input)
+					
+				//By default detectAllFaces and detectSingleFace utilize the SSD Mobilenet V1 Face Detector. You can specify the face detector by passing the corresponding options object:
+
+					//var detections1 = await faceapi.detectAllFaces(input, new faceapi.SsdMobilenetv1Options())
+					//var detections2 = await faceapi.detectAllFaces(input, new faceapi.TinyFaceDetectorOptions())
+					//var detections3 = await faceapi.detectAllFaces(input, new faceapi.MtcnnOptions())
+				
+				document.getElementById('msg2').innerHTML='---';
+				
+				var detections=await faceapi.detectAllFaces(videoEl).withFaceLandmarks().withFaceDescriptors();
+				
+				
+				//Detect all faces in an image + computes 68 Point Face Landmarks for each detected face. Returns Array<WithFaceLandmarks<WithFaceDetection<{}>>>:
+
+					//var detectionsWithLandmarks = await faceapi.detectAllFaces(input).withFaceLandmarks()
+
+
+				//Detect the face with the highest confidence score in an image + computes 68 Point Face Landmarks for that face. Returns WithFaceLandmarks<WithFaceDetection<{}>> | undefined:
+
+					//var detectionWithLandmarks = await faceapi.detectSingleFace(input).withFaceLandmarks()
+				
+				
+				//Detect all faces in an image + compute 68 Point Face Landmarks for each detected face. Returns Array<WithFaceDescriptor<WithFaceLandmarks<WithFaceDetection<{}>>>>:
+
+					//var results = await faceapi.detectAllFaces(input).withFaceLandmarks().withFaceDescriptors()
+				
+				
+				
+				//Detect the face with the highest confidence score in an image + compute 68 Point Face Landmarks and face descriptor for that face. Returns WithFaceDescriptor<WithFaceLandmarks<WithFaceDetection<{}>>> | undefined:
+
+					//var result = await faceapi.detectSingleFace(input).withFaceLandmarks().withFaceDescriptor()
+					
+					
+				//Detect all faces in an image + estimate age and recognize gender of each face. Returns Array<WithAge<WithGender<WithFaceLandmarks<WithFaceDetection<{}>>>>>:
+
+					//var detectionsWithAgeAndGender = await faceapi.detectAllFaces(input).withFaceLandmarks().withAgeAndGender()
+
+
+
+				//Detect the face with the highest confidence score in an image + estimate age and recognize gender for that face. Returns WithAge<WithGender<WithFaceLandmarks<WithFaceDetection<{}>>>> | undefined:
+
+					//var detectionWithAgeAndGender = await faceapi.detectSingleFace(input).withFaceLandmarks().withAgeAndGender()
+				
+				/*
+				// all faces
+				await faceapi.detectAllFaces(input)
+				await faceapi.detectAllFaces(input).withFaceExpressions()
+				await faceapi.detectAllFaces(input).withFaceLandmarks()
+				await faceapi.detectAllFaces(input).withFaceLandmarks().withFaceExpressions()
+				await faceapi.detectAllFaces(input).withFaceLandmarks().withFaceExpressions().withFaceDescriptors()
+				await faceapi.detectAllFaces(input).withFaceLandmarks().withAgeAndGender().withFaceDescriptors()
+				await faceapi.detectAllFaces(input).withFaceLandmarks().withFaceExpressions().withAgeAndGender().withFaceDescriptors()
+
+				// single face
+				await faceapi.detectSingleFace(input)
+				await faceapi.detectSingleFace(input).withFaceExpressions()
+				await faceapi.detectSingleFace(input).withFaceLandmarks()
+				await faceapi.detectSingleFace(input).withFaceLandmarks().withFaceExpressions()
+				await faceapi.detectSingleFace(input).withFaceLandmarks().withFaceExpressions().withFaceDescriptor()
+				await faceapi.detectSingleFace(input).withFaceLandmarks().withAgeAndGender().withFaceDescriptor()
+				await faceapi.detectSingleFace(input).withFaceLandmarks().withFaceExpressions().withAgeAndGender().withFaceDescriptor()
+				*/
+				
+				
+				
+				var rsz_detect=faceapi.resizeResults(detections,displaySize);
+				canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height);
+				faceapi.draw.drawDetections(canvas,rsz_detect);				
+				//faceapi.draw.drawFaceLandmarks(canvas,rsz_detect);				
+				//faceapi.draw.drawFaceExpressions(canvas,rsz_detect);
+				
+				
+				
+				
+				
+				
+				console.log('Process Running...');
+				document.getElementById('msg').style.display='block';
+				
+				
+				
+				
+				
+				
+				/*
+				//labeling
+				var labeledDescriptors = [
+				  new faceapi.LabeledFaceDescriptors(
+					'Mir Lutfur Rahman',
+					[ref_results /*, ...*/ /* ]
+				  )
+				]
+				*/
+				
+				// create FaceMatcher with automatically assigned labels
+				// from the detection results for the reference image
+				
+				//var faceMatcher = new faceapi.FaceMatcher(ref_results1); 
+				
+				//checking query image with reference image
+				
+				if (detections) {
+					var results = rsz_detect.map(d => faceMatcher.findBestMatch(d.descriptor))
+					results.forEach((result, i) => {
+					  var box = rsz_detect[i].detection.box;
+					  var drawBox = new faceapi.draw.DrawBox(box, { label: result.toString() });
+					  drawBox.draw(canvas);
+					  console.log(result.toString());
+					  document.getElementById('msg2').innerHTML=result.toString();
+					})
+				}
+								
+				
+			}, 100)
+		})
+		
+		
+		function loadLabeledImages() {
+		  var labels = ['PSD', 'TDR', 'MH', 'MLR'];
+		  return Promise.all(
+			labels.map(async label => {
+			  var descriptions = [];
+			  for (let i = 1; i <= 3; i++) {
+				var img = await faceapi.fetchImage('images/'+label+'/'+i+'.jpg');
+				var detections = await faceapi.detectSingleFace(img).withFaceLandmarks().withFaceDescriptor();
+				var displaySize= {width: img.width, height: img.height };
+			
+				var rsz_detect=faceapi.resizeResults(detections,displaySize);
+				descriptions.push(rsz_detect.descriptor);
+			  }
+
+			  return new faceapi.LabeledFaceDescriptors(label, descriptions);
+			})
+		  )
+		}
+		
+		
+		
+	</script>
+</html> 
