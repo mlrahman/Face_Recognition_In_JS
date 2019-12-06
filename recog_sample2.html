@@ -27,13 +27,14 @@
 		  <video  id="inputVideo" width="720" height="560" autoplay muted></video>
 		  
 		</div>
-		<p id="msg" style="color:red;display:none;font-size:30px;z-index:111;position:absolute;font-weight:bold;margin-top:300px;background-color:white;">Process Running...</p>
+		<p id="msg" style="color:red;display:none;font-size:30px;z-index:111;position:absolute;font-weight:bold;margin-top:300px;background-color:white;"></p>
 		<p id="msg2" style="color:blue;display:none;font-size:30px;z-index:111;position:absolute;font-weight:bold;margin-top:370px;background-color:white;"></p>
 		
 	</body>
 	<script>
 		
 		
+		document.getElementById('msg').style.display='block';
 		var videoEl = document.getElementById('inputVideo');
 		var labeledFaceDescriptors,faceMatcher;
 		
@@ -48,6 +49,10 @@
 		// mtcnn
 		// tinyYolov2
 		 
+		document.getElementById('msg').innerHTML= 'Welcome To Face Recognition Web Application';
+		 
+		
+		document.getElementById('msg').innerHTML= 'All Assets are Loading....'; 
 		Promise.all([
 		faceapi.nets.ssdMobilenetv1.loadFromUri('assets/'),
 		faceapi.nets.tinyFaceDetector.loadFromUri('assets/'),
@@ -56,21 +61,27 @@
 		faceapi.nets.faceRecognitionNet.loadFromUri('assets/'),
 		faceapi.nets.faceExpressionNet.loadFromUri('assets/')
 		
+		
 		// accordingly for the other models:
 		// await faceapi.nets.faceLandmark68Net.loadFromUri('/models')
 		// await faceapi.nets.faceRecognitionNet.loadFromUri('/models')
 		// ...
 		]).then(st_vid);
-			
+		
+		
 		async function st_vid() {
-		 
+		document.getElementById('msg').innerHTML= 'All Assest Loaded';
+		
 		 
 		
 		document.getElementById('msg2').style.display='block';
 		//load reference images
+		
+		document.getElementById('msg').innerHTML= 'All Datasets are Loading...';
 		labeledFaceDescriptors = await loadLabeledImages();
 		faceMatcher = new faceapi.FaceMatcher(labeledFaceDescriptors, 0.5);
 		
+		document.getElementById('msg').innerHTML= 'All Datasets Loaded';
 		
 		
 				
@@ -85,7 +96,11 @@
 		}
 		console.log('Camera started');
 		
+		document.getElementById('msg').innerHTML= 'Camera Starting...';
+		
 		videoEl.addEventListener('play', ()=> {
+			
+			document.getElementById('msg').innerHTML= 'Camera Runnning';
 			var canvas=faceapi.createCanvasFromMedia(videoEl);
 			document.body.append(canvas);
 			canvas.style.position='absolute';
@@ -112,6 +127,7 @@
 				
 				document.getElementById('msg2').innerHTML='---';
 				
+				document.getElementById('msg').innerHTML= 'Detecting Face....';
 				var detections=await faceapi.detectAllFaces(videoEl).withFaceLandmarks().withFaceDescriptors();
 				
 				
@@ -180,7 +196,6 @@
 				
 				
 				console.log('Process Running...');
-				document.getElementById('msg').style.display='block';
 				
 				
 				
@@ -205,6 +220,8 @@
 				//checking query image with reference image
 				
 				if (detections) {
+					document.getElementById('msg').innerHTML= 'Face Detected and Recognition Started...';
+				
 					var results = rsz_detect.map(d => faceMatcher.findBestMatch(d.descriptor))
 					results.forEach((result, i) => {
 					  var box = rsz_detect[i].detection.box;
@@ -212,6 +229,8 @@
 					  drawBox.draw(canvas);
 					  console.log(result.toString());
 					  document.getElementById('msg2').innerHTML=result.toString();
+						
+					  document.getElementById('msg').innerHTML= 'Face Recognition Done';
 					})
 				}
 								
@@ -221,7 +240,7 @@
 		
 		
 		function loadLabeledImages() {
-		  var labels = ['PSD', 'TDR', 'MH', 'MLR'];
+		  var labels = ['PSD', 'TDR', 'MH', 'MLR','ADP','Sajid'];
 		  return Promise.all(
 			labels.map(async label => {
 			  var descriptions = [];
